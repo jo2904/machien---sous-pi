@@ -4,7 +4,7 @@ from PIL import Image, ImageTk
 import os
 import time
 import random
-import math
+import RPi.GPIO as GPIO
 
 
 #####################################
@@ -357,10 +357,54 @@ class Jeu:
     def quit(self):
         self.fenetres.destroy()
 
+#####################################
+############## GPIO #################
+#####################################
 
-#####################################
-##########   MAINLOOP  ##############
-#####################################
+
+# Definition des pins
+pinBtn = 3
+
+
+GPIO.setmode(GPIO.BOARD)
+GPIO.setwarnings(False)
+
+# Definition des pins en entree / sortie
+GPIO.setup(pinBtn, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+
+pwm_gpio = 12
+frequence = 50
+
+
+def angle(angle):
+    if angle > 180 or angle < 0:
+        return False
+
+    start = 4
+    end = 12.5
+    ratio = (end - start)/180  # Calcul ratio from angle to percent
+
+    angle_as_percent = angle * ratio
+
+    return start + angle_as_percent
+
+
+def popcorne():
+    GPIO.setup(pwm_gpio, GPIO.OUT)
+    pwm = GPIO.PWM(pwm_gpio, frequence)
+    pwm.start(angle(0))
+    time.sleep(1)
+
+    time.sleep(5)
+
+    pwm.ChangeDutyCycle(angle(120))
+    time.sleep(1)
+    pwm.stop()
+    GPIO.cleanup()
+
+    #####################################
+    ##########   MAINLOOP  ##############
+    #####################################
 
 
 def go():
@@ -372,7 +416,12 @@ def go():
 
 def main():
     while True:
-        go()
+        etat = GPIO.input(pinBtn)
+        if (etat == 0):
+            print("Appui detecte")
+            go()
+        # Temps de repos pour eviter la surchauffe du processeur
+        time.sleep(0.3)
 
 
 main()
